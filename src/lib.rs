@@ -39,18 +39,18 @@
 //! - [`consensus`]: Consensus validation testing
 //! - [`rpc`]: RPC testing utilities
 
-pub mod harness;
-pub mod evm;
-pub mod engine;
-pub mod fixtures;
-pub mod presets;
 pub mod consensus;
+pub mod engine;
+pub mod evm;
+pub mod fixtures;
+pub mod harness;
+pub mod presets;
 pub mod rpc;
 
 // Re-export commonly used types
-pub use harness::{TestContext, TestContextBuilder};
 pub use evm::EvmTestHarness;
 pub use fixtures::FixtureManager;
+pub use harness::{TestContext, TestContextBuilder};
 
 /// Common result type used throughout the harness
 pub type Result<T> = std::result::Result<T, Error>;

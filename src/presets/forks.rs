@@ -26,7 +26,10 @@ pub fn test_fork_transition<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId,
 }
 
 /// Test that features are disabled before fork
-pub fn test_feature_disabled_pre_fork<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>>(
+pub fn test_feature_disabled_pre_fork<
+    DB: Database + Clone,
+    Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>,
+>(
     harness: &mut EvmTestHarness<DB, Evm>,
     fork_block: u64,
 ) -> Result<()> {
@@ -38,7 +41,10 @@ pub fn test_feature_disabled_pre_fork<DB: Database + Clone, Evm: EvmFactory<Spec
 }
 
 /// Test that features are enabled after fork
-pub fn test_feature_enabled_post_fork<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>>(
+pub fn test_feature_enabled_post_fork<
+    DB: Database + Clone,
+    Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>,
+>(
     harness: &mut EvmTestHarness<DB, Evm>,
     fork_block: u64,
 ) -> Result<()> {

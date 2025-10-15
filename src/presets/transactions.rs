@@ -3,12 +3,15 @@
 use crate::{evm::EvmTestHarness, Error, Result};
 use reth::revm::{
     context::TxEnv,
-    primitives::{Address, Bytes, TxKind, U256, hardfork::SpecId},
+    primitives::{hardfork::SpecId, Address, Bytes, TxKind, U256},
 };
 use reth_evm::{Database, EvmFactory};
 
 /// Test EIP-1559 transaction execution
-pub fn test_eip1559_transaction<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>>(
+pub fn test_eip1559_transaction<
+    DB: Database + Clone,
+    Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>,
+>(
     harness: &mut EvmTestHarness<DB, Evm>,
 ) -> Result<()> {
     let tx = TxEnv {
@@ -91,7 +94,10 @@ pub fn test_value_transfer<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, 
 }
 
 /// Test contract deployment
-pub fn test_contract_deployment<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>>(
+pub fn test_contract_deployment<
+    DB: Database + Clone,
+    Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>,
+>(
     harness: &mut EvmTestHarness<DB, Evm>,
     bytecode: Bytes,
 ) -> Result<Address> {
@@ -119,7 +125,9 @@ pub fn test_contract_deployment<DB: Database + Clone, Evm: EvmFactory<Spec = Spe
         Ok(Address::ZERO)
     } else {
         Err(Error::evm_execution(
-            result.revert_reason().unwrap_or("Contract deployment failed"),
+            result
+                .revert_reason()
+                .unwrap_or("Contract deployment failed"),
         ))
     }
 }

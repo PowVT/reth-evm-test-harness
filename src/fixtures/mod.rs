@@ -1,7 +1,7 @@
 //! Test fixture management
 
-mod manager;
 mod format;
+mod manager;
 
-pub use manager::FixtureManager;
 pub use format::{BlockFixture, TestVector};
+pub use manager::FixtureManager;

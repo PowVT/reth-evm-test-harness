@@ -5,7 +5,7 @@ use crate::{Error, Result};
 use reth::revm::{
     context::{BlockEnv, CfgEnv, TxEnv},
     database_interface::EmptyDB,
-    primitives::{Address, Bytes, TxKind, U256, hardfork::SpecId},
+    primitives::{hardfork::SpecId, Address, Bytes, TxKind, U256},
 };
 use reth_chainspec::{ChainSpec, EthChainSpec};
 use reth_evm::{Database, Evm, EvmEnv, EvmFactory};
@@ -107,12 +107,19 @@ impl<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>> EvmTestHa
                     revert_reason,
                 })
             }
-            Err(e) => Err(Error::evm_execution(format!("EVM execution failed: {:?}", e))),
+            Err(e) => Err(Error::evm_execution(format!(
+                "EVM execution failed: {:?}",
+                e
+            ))),
         }
     }
 
     /// Execute a precompile call
-    pub fn execute_precompile(&mut self, address: Address, input: Bytes) -> Result<ExecutionResult> {
+    pub fn execute_precompile(
+        &mut self,
+        address: Address,
+        input: Bytes,
+    ) -> Result<ExecutionResult> {
         let tx = TxEnv {
             caller: Address::ZERO,
             gas_limit: 10_000_000,
@@ -188,7 +195,9 @@ impl<DB: Database + Default + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv> 
     }
 }
 
-impl<DB: Database + Default + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv> + Default> EvmTestHarnessBuilder<DB, Evm> {
+impl<DB: Database + Default + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv> + Default>
+    EvmTestHarnessBuilder<DB, Evm>
+{
     /// Create a new builder
     pub fn new() -> Self {
         Self {
@@ -248,7 +257,9 @@ impl<DB: Database + Default + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv> 
     pub fn build(self) -> EvmTestHarness<DB, Evm> {
         let evm_factory = self.evm_factory.unwrap_or_default();
         let db = self.db.unwrap_or_default();
-        let chain_spec = self.chain_spec.unwrap_or_else(|| Arc::new(ChainSpec::default()));
+        let chain_spec = self
+            .chain_spec
+            .unwrap_or_else(|| Arc::new(ChainSpec::default()));
 
         let mut harness = EvmTestHarness::new(evm_factory, db, chain_spec);
         harness.set_block_number(self.block_number);

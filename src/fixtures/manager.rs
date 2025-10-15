@@ -44,8 +44,9 @@ impl FixtureManager {
                 let content =
                     std::fs::read_to_string(&path).map_err(|e| Error::fixture(e.to_string()))?;
 
-                let block: BlockFixture = serde_json::from_str(&content)
-                    .map_err(|e| Error::fixture(format!("Failed to parse {}: {}", path.display(), e)))?;
+                let block: BlockFixture = serde_json::from_str(&content).map_err(|e| {
+                    Error::fixture(format!("Failed to parse {}: {}", path.display(), e))
+                })?;
 
                 blocks.push(block);
             }

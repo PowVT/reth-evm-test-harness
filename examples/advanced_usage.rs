@@ -42,7 +42,9 @@ fn create_test_harness() -> EvmTestHarness<reth::revm::database_interface::Empty
         .build()
 }
 
-fn test_fork_transition(harness: &mut EvmTestHarness<reth::revm::database_interface::EmptyDB, EthEvmFactory>) -> eyre::Result<()> {
+fn test_fork_transition(
+    harness: &mut EvmTestHarness<reth::revm::database_interface::EmptyDB, EthEvmFactory>,
+) -> eyre::Result<()> {
     let fork_block = 100;
     let tx = create_test_tx();
 
@@ -61,7 +63,9 @@ fn test_fork_transition(harness: &mut EvmTestHarness<reth::revm::database_interf
     Ok(())
 }
 
-fn test_custom_tx_type(harness: &mut EvmTestHarness<reth::revm::database_interface::EmptyDB, EthEvmFactory>) -> eyre::Result<()> {
+fn test_custom_tx_type(
+    harness: &mut EvmTestHarness<reth::revm::database_interface::EmptyDB, EthEvmFactory>,
+) -> eyre::Result<()> {
     // Example: Test a custom transaction type
     let custom_tx = TxEnv {
         tx_type: 0x7E, // Example custom type

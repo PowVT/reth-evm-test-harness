@@ -89,7 +89,9 @@ impl<Evm: EvmFactory + Default> TestContextBuilder<Evm> {
     /// Build the test context
     pub fn build(self) -> Result<TestContext<Evm>> {
         let evm_factory = self.evm_factory.unwrap_or_default();
-        let chain_spec = self.chain_spec.unwrap_or_else(|| Arc::new(ChainSpec::default()));
+        let chain_spec = self
+            .chain_spec
+            .unwrap_or_else(|| Arc::new(ChainSpec::default()));
 
         let mut ctx = TestContext::new(evm_factory, chain_spec);
         *ctx.current_block.write() = self.block_env;
@@ -106,9 +108,7 @@ mod tests {
 
     #[test]
     fn test_builder_defaults() {
-        let ctx = TestContextBuilder::<EthEvmFactory>::new()
-            .build()
-            .unwrap();
+        let ctx = TestContextBuilder::<EthEvmFactory>::new().build().unwrap();
 
         assert_eq!(ctx.block_number(), 0);
         assert!(!ctx.config.verbose);

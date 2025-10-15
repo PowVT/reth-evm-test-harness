@@ -26,7 +26,8 @@ fn main() -> eyre::Result<()> {
     assert_eq!(result.gas_used, 21_000);
 
     // Test a precompile (identity)
-    let identity = Address::from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4]);
+    let identity =
+        Address::from_slice(&[0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 4]);
     let input = Bytes::from(vec![1, 2, 3, 4, 5]);
     let result = harness.execute_precompile(identity, input.clone())?;
     assert_eq!(result.output, input);
