@@ -7,19 +7,14 @@ use reth::revm::primitives::{Bytes, Log};
 pub struct ExecutionResult {
     /// Whether execution succeeded
     pub success: bool,
-
     /// Gas used during execution
     pub gas_used: u64,
-
     /// Gas refunded
     pub gas_refunded: u64,
-
     /// Output data
     pub output: Bytes,
-
     /// Logs emitted
     pub logs: Vec<Log>,
-
     /// Revert reason if execution failed
     pub revert_reason: Option<String>,
 }
@@ -82,13 +77,10 @@ impl ExecutionResult {
 pub struct EvmComparison {
     /// The test EVM result
     pub test_result: ExecutionResult,
-
     /// The reference EVM result
     pub reference_result: ExecutionResult,
-
     /// Whether the results match
     pub matches: bool,
-
     /// Differences found
     pub differences: Vec<String>,
 }

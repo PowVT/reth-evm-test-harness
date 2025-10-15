@@ -13,13 +13,10 @@ use std::sync::Arc;
 pub struct TestContext<Evm: EvmFactory> {
     /// The EVM factory for this test
     pub evm_factory: Evm,
-
     /// The chain specification
     pub chain_spec: Arc<ChainSpec>,
-
     /// Current block environment
     pub current_block: Arc<RwLock<BlockEnv>>,
-
     /// Test configuration
     pub config: TestConfig,
 }
@@ -29,19 +26,14 @@ pub struct TestContext<Evm: EvmFactory> {
 pub struct BlockEnv {
     /// Current block number
     pub number: u64,
-
     /// Current block timestamp
     pub timestamp: u64,
-
     /// Block base fee
     pub base_fee: Option<u64>,
-
     /// Block gas limit
     pub gas_limit: u64,
-
     /// Block beneficiary/coinbase
     pub coinbase: Address,
-
     /// Previous block hash
     pub prev_randao: B256,
 }
