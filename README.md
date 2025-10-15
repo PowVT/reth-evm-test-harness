@@ -6,7 +6,7 @@ A testing framework for custom [Reth](https://github.com/paradigmxyz/reth) EVM i
 
 Testing custom Ethereum execution clients is hard. Most projects use bash scripts that spin up Docker containers and make JSON-RPC calls—slow, flaky, and difficult to debug.
 
-Reth Node Builder SDK users need test tooling which provides fast, deterministic, type-safe Rust without requiring full node setup or network calls.
+Reth Node Builder users need test tooling which provides fast, deterministic, type-safe Rust without requiring full node setup or network calls. While Reth provides `e2e-test-utils` for full node integration testing and `MockExecutor` for mocked execution results, there's no lightweight solution for EVM execution testing. This harness fills that gap—offering actual in-memory EVM execution without the overhead of spinning up a complete node, networking stack, or RPC servers. This is especially useful for chains with custom EVM implementations that need to rapidly iterate and test their EVM modifications without full node complexity.
 
 ## Key features
 - **EVM Testing**: Execute transactions and test precompiles in-memory
