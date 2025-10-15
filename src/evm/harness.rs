@@ -1,6 +1,6 @@
 //! Core EVM test harness for in-memory execution
 
-use super::result::ExecutionResult;
+use super::result::HarnessExecutionResult;
 use crate::{Error, Result};
 use reth::revm::{
     context::{BlockEnv, CfgEnv, TxEnv},
@@ -17,16 +17,12 @@ use std::sync::Arc;
 pub struct EvmTestHarness<DB: Database, Evm: EvmFactory> {
     /// The EVM factory
     evm_factory: Evm,
-
     /// The database
     db: DB,
-
     /// The chain specification
     chain_spec: Arc<ChainSpec>,
-
     /// Current block environment
     block_env: BlockEnv,
-
     /// EVM configuration
     cfg_env: CfgEnv,
 }
@@ -55,7 +51,7 @@ impl<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>> EvmTestHa
     }
 
     /// Execute a transaction
-    pub fn execute_tx(&mut self, tx: TxEnv) -> Result<ExecutionResult> {
+    pub fn execute_tx(&mut self, tx: TxEnv) -> Result<HarnessExecutionResult> {
         let db = self.db.clone();
         let env = EvmEnv {
             block_env: self.block_env.clone(),
@@ -68,44 +64,49 @@ impl<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>> EvmTestHa
             Ok(result_and_state) => {
                 let result = result_and_state.result;
 
-                let (success, output, revert_reason) = match result {
+                match result {
                     reth::revm::context_interface::result::ExecutionResult::Success {
                         output,
                         gas_used,
                         gas_refunded,
                         ..
                     } => {
-                        return Ok(ExecutionResult {
+                        Ok(HarnessExecutionResult {
                             success: true,
                             gas_used,
                             gas_refunded,
                             output: output.into_data(),
                             logs: Vec::new(), // TODO: Extract logs from state
                             revert_reason: None,
-                        });
+                        })
                     }
                     reth::revm::context_interface::result::ExecutionResult::Revert {
                         output,
-                        gas_used: _,
-                    } => (false, output, Some("Transaction reverted".to_string())),
+                        gas_used,
+                    } => {
+                        Ok(HarnessExecutionResult {
+                            success: false,
+                            gas_used,
+                            gas_refunded: 0,
+                            output,
+                            logs: Vec::new(),
+                            revert_reason: Some("Transaction reverted".to_string()),
+                        })
+                    }
                     reth::revm::context_interface::result::ExecutionResult::Halt {
                         reason,
-                        gas_used: _,
-                    } => (
-                        false,
-                        Bytes::new(),
-                        Some(format!("Transaction halted: {:?}", reason)),
-                    ),
-                };
-
-                Ok(ExecutionResult {
-                    success,
-                    gas_used: 0, // Extract from result
-                    gas_refunded: 0,
-                    output,
-                    logs: Vec::new(),
-                    revert_reason,
-                })
+                        gas_used,
+                    } => {
+                        Ok(HarnessExecutionResult {
+                            success: false,
+                            gas_used,
+                            gas_refunded: 0,
+                            output: Bytes::new(),
+                            logs: Vec::new(),
+                            revert_reason: Some(format!("Transaction halted: {:?}", reason)),
+                        })
+                    }
+                }
             }
             Err(e) => Err(Error::evm_execution(format!(
                 "EVM execution failed: {:?}",
@@ -119,7 +120,7 @@ impl<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>> EvmTestHa
         &mut self,
         address: Address,
         input: Bytes,
-    ) -> Result<ExecutionResult> {
+    ) -> Result<HarnessExecutionResult> {
         let tx = TxEnv {
             caller: Address::ZERO,
             gas_limit: 10_000_000,

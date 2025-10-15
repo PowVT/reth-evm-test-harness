@@ -4,7 +4,7 @@ use reth::revm::primitives::{Bytes, Log};
 
 /// Result of EVM execution
 #[derive(Debug, Clone)]
-pub struct ExecutionResult {
+pub struct HarnessExecutionResult {
     /// Whether execution succeeded
     pub success: bool,
     /// Gas used during execution
@@ -19,7 +19,7 @@ pub struct ExecutionResult {
     pub revert_reason: Option<String>,
 }
 
-impl ExecutionResult {
+impl HarnessExecutionResult {
     /// Create a successful execution result
     pub fn success(gas_used: u64, output: Bytes) -> Self {
         Self {
@@ -76,9 +76,9 @@ impl ExecutionResult {
 #[derive(Debug, Clone)]
 pub struct EvmComparison {
     /// The test EVM result
-    pub test_result: ExecutionResult,
+    pub test_result: HarnessExecutionResult,
     /// The reference EVM result
-    pub reference_result: ExecutionResult,
+    pub reference_result: HarnessExecutionResult,
     /// Whether the results match
     pub matches: bool,
     /// Differences found
@@ -87,7 +87,7 @@ pub struct EvmComparison {
 
 impl EvmComparison {
     /// Create a new comparison
-    pub fn new(test_result: ExecutionResult, reference_result: ExecutionResult) -> Self {
+    pub fn new(test_result: HarnessExecutionResult, reference_result: HarnessExecutionResult) -> Self {
         let mut differences = Vec::new();
         let mut matches = true;
 

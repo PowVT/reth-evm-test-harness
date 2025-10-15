@@ -4,4 +4,4 @@ mod harness;
 mod result;
 
 pub use harness::{EvmTestHarness, EvmTestHarnessBuilder};
-pub use result::{EvmComparison, ExecutionResult};
+pub use result::{EvmComparison, HarnessExecutionResult};
