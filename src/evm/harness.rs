@@ -277,7 +277,7 @@ mod tests {
 
     #[test]
     fn test_set_block_env() {
-        let mut harness = EvmTestHarness::<EmptyDB, EthEvmFactory>::builder()
+        let harness = EvmTestHarness::<EmptyDB, EthEvmFactory>::builder()
             .with_block_number(100)
             .with_timestamp(1234567890)
             .with_base_fee(1_000_000_000)
