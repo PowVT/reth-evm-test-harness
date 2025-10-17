@@ -4,8 +4,9 @@ use super::result::HarnessExecutionResult;
 use crate::{Error, Result};
 use reth::revm::{
     context::{BlockEnv, CfgEnv, TxEnv},
-    database_interface::EmptyDB,
+    database_interface::{DatabaseCommit, EmptyDB},
     primitives::{hardfork::SpecId, Address, Bytes, TxKind, U256},
+    State,
 };
 use reth_chainspec::{ChainSpec, EthChainSpec};
 use reth_evm::{Database, Evm, EvmEnv, EvmFactory};
@@ -27,14 +28,23 @@ pub struct EvmTestHarness<DB: Database, Evm: EvmFactory> {
     cfg_env: CfgEnv,
 }
 
-impl<Evm: EvmFactory<Spec = SpecId, Tx = TxEnv> + Default> EvmTestHarness<EmptyDB, Evm> {
-    /// Create a new builder
-    pub fn builder() -> EvmTestHarnessBuilder<EmptyDB, Evm> {
-        EvmTestHarnessBuilder::new()
+impl<Evm: EvmFactory<Spec = SpecId, Tx = TxEnv> + Default> EvmTestHarness<State<EmptyDB>, Evm> {
+    /// Create a new builder with an empty State database
+    pub fn builder() -> EvmTestHarnessBuilder<State<EmptyDB>, Evm> {
+        let db = State::builder().with_database(EmptyDB::default()).build();
+        EvmTestHarnessBuilder {
+            evm_factory: None,
+            db: Some(db),
+            chain_spec: None,
+            block_number: 0,
+            timestamp: 0,
+            base_fee: None,
+            spec_id: SpecId::CANCUN,
+        }
     }
 }
 
-impl<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>> EvmTestHarness<DB, Evm> {
+impl<DB: Database + DatabaseCommit, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>> EvmTestHarness<DB, Evm> {
     /// Create a new EVM test harness
     pub fn new(evm_factory: Evm, db: DB, chain_spec: Arc<ChainSpec>) -> Self {
         let mut cfg_env = CfgEnv::default();
@@ -52,17 +62,23 @@ impl<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>> EvmTestHa
 
     /// Execute a transaction
     pub fn execute_tx(&mut self, tx: TxEnv) -> Result<HarnessExecutionResult> {
-        let db = self.db.clone();
         let env = EvmEnv {
             block_env: self.block_env.clone(),
             cfg_env: self.cfg_env.clone(),
         };
 
-        let mut evm = self.evm_factory.create_evm(db, env);
+        let result_and_state = {
+            let mut evm = self.evm_factory.create_evm(&mut self.db, env);
+            evm.transact(tx)
+        };
 
-        match evm.transact(tx) {
+        match result_and_state {
             Ok(result_and_state) => {
                 let result = result_and_state.result;
+                let state = result_and_state.state;
+
+                // Commit state changes to the database
+                self.db.commit(state);
 
                 match result {
                     reth::revm::context_interface::result::ExecutionResult::Success {
@@ -116,13 +132,17 @@ impl<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>> EvmTestHa
     }
 
     /// Execute a precompile call
+    ///
+    /// Uses `caller` as the transaction sender. If None, uses Address::ZERO
+    /// which may not have funds (use a funded account if needed).
     pub fn execute_precompile(
         &mut self,
-        address: Address,
+        address: Address, // TODO: add eth and other precompile libs
         input: Bytes,
+        caller: Option<Address>,
     ) -> Result<HarnessExecutionResult> {
         let tx = TxEnv {
-            caller: Address::ZERO,
+            caller: caller.unwrap_or(Address::ZERO),
             gas_limit: 10_000_000,
             gas_price: 1_000_000_000u128, // 1 gwei
             kind: TxKind::Call(address),
@@ -178,7 +198,7 @@ impl<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>> EvmTestHa
 }
 
 /// Builder for `EvmTestHarness`
-pub struct EvmTestHarnessBuilder<DB: Database, Evm: EvmFactory> {
+pub struct EvmTestHarnessBuilder<DB: Database + DatabaseCommit, Evm: EvmFactory> {
     evm_factory: Option<Evm>,
     db: Option<DB>,
     chain_spec: Option<Arc<ChainSpec>>,
@@ -188,22 +208,14 @@ pub struct EvmTestHarnessBuilder<DB: Database, Evm: EvmFactory> {
     spec_id: SpecId,
 }
 
-impl<DB: Database + Default + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv> + Default> Default
-    for EvmTestHarnessBuilder<DB, Evm>
-{
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<DB: Database + Default + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv> + Default>
+impl<DB: Database + DatabaseCommit, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>>
     EvmTestHarnessBuilder<DB, Evm>
 {
-    /// Create a new builder
-    pub fn new() -> Self {
+    /// Create a new builder (requires explicit database)
+    pub fn with_db(db: DB) -> Self {
         Self {
             evm_factory: None,
-            db: None,
+            db: Some(db),
             chain_spec: None,
             block_number: 0,
             timestamp: 0,
@@ -215,12 +227,6 @@ impl<DB: Database + Default + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv> 
     /// Set the EVM factory
     pub fn with_evm_factory(mut self, evm_factory: Evm) -> Self {
         self.evm_factory = Some(evm_factory);
-        self
-    }
-
-    /// Set the database
-    pub fn with_db(mut self, db: DB) -> Self {
-        self.db = Some(db);
         self
     }
 
@@ -255,9 +261,12 @@ impl<DB: Database + Default + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv> 
     }
 
     /// Build the harness
-    pub fn build(self) -> EvmTestHarness<DB, Evm> {
+    pub fn build(self) -> EvmTestHarness<DB, Evm>
+    where
+        Evm: Default,
+    {
         let evm_factory = self.evm_factory.unwrap_or_default();
-        let db = self.db.unwrap_or_default();
+        let db = self.db.expect("Database must be provided");
         let chain_spec = self
             .chain_spec
             .unwrap_or_else(|| Arc::new(ChainSpec::default()));
@@ -274,6 +283,23 @@ impl<DB: Database + Default + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv> 
     }
 }
 
+// Specialized implementation for State databases
+impl<DB: Database, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>> EvmTestHarness<State<DB>, Evm> {
+    /// Get the balance of an account
+    pub fn get_balance(&mut self, address: Address) -> Result<U256> {
+        match self.db.load_cache_account(address) {
+            Ok(account) => match account.account_info() {
+                Some(info) => Ok(info.balance),
+                None => Ok(U256::ZERO),
+            },
+            Err(e) => Err(Error::evm_execution(format!(
+                "Failed to load account: {:?}",
+                e
+            ))),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -281,7 +307,7 @@ mod tests {
 
     #[test]
     fn test_harness_creation() {
-        let harness = EvmTestHarness::<EmptyDB, EthEvmFactory>::builder().build();
+        let harness = EvmTestHarness::<State<EmptyDB>, EthEvmFactory>::builder().build();
 
         assert_eq!(harness.block_number(), 0);
         assert!(harness.chain_id() > 0);
@@ -289,7 +315,7 @@ mod tests {
 
     #[test]
     fn test_set_block_env() {
-        let harness = EvmTestHarness::<EmptyDB, EthEvmFactory>::builder()
+        let harness = EvmTestHarness::<State<EmptyDB>, EthEvmFactory>::builder()
             .with_block_number(100)
             .with_timestamp(1234567890)
             .with_base_fee(1_000_000_000)

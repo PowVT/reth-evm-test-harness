@@ -5,18 +5,18 @@
 use alloy_evm::eth::EthEvmFactory;
 use reth::revm::{
     context::TxEnv,
+    database_interface::EmptyDB,
     primitives::{Address, Bytes, TxKind, U256},
+    State,
 };
-use reth_chainspec::ChainSpec;
-use reth_evm_test_harness::evm::EvmTestHarness;
-use std::sync::Arc;
+use reth_evm_test_harness::evm::{dev_account, DevHarness, EvmTestHarness};
 
 #[cfg(feature = "fixtures")]
 use reth_evm_test_harness::fixtures::FixtureManager;
 
 fn main() -> eyre::Result<()> {
-    // Custom test context helper
-    let mut harness = create_test_harness();
+    // Create dev harness with pre-funded accounts
+    let mut harness = EvmTestHarness::<_, EthEvmFactory>::dev();
 
     // Test fork transitions
     test_fork_transition(&mut harness)?;
@@ -28,33 +28,23 @@ fn main() -> eyre::Result<()> {
     #[cfg(feature = "fixtures")]
     test_with_fixtures()?;
 
-    println!("✓ Advanced tests passed");
     Ok(())
 }
 
-fn create_test_harness() -> EvmTestHarness<reth::revm::database_interface::EmptyDB, EthEvmFactory> {
-    let chain_spec = Arc::new(ChainSpec::default());
-    EvmTestHarness::builder()
-        .with_evm_factory(EthEvmFactory::default())
-        .with_chain_spec(chain_spec)
-        .with_block_number(1)
-        .with_timestamp(1_600_000_000)
-        .build()
-}
-
 fn test_fork_transition(
-    harness: &mut EvmTestHarness<reth::revm::database_interface::EmptyDB, EthEvmFactory>,
+    harness: &mut EvmTestHarness<State<EmptyDB>, EthEvmFactory>,
 ) -> eyre::Result<()> {
     let fork_block = 100;
-    let tx = create_test_tx();
 
     // Pre-fork
     harness.set_block_number(fork_block - 1);
-    let result_pre = harness.execute_tx(tx.clone())?;
+    let tx_pre = create_test_tx_with_nonce(0);
+    let result_pre = harness.execute_tx(tx_pre)?;
 
-    // Post-fork
+    // Post-fork (need different nonce since state persists)
     harness.set_block_number(fork_block);
-    let result_post = harness.execute_tx(tx)?;
+    let tx_post = create_test_tx_with_nonce(1);
+    let result_post = harness.execute_tx(tx_post)?;
 
     // Compare behavior across fork
     assert!(result_pre.is_success());
@@ -64,16 +54,18 @@ fn test_fork_transition(
 }
 
 fn test_custom_tx_type(
-    harness: &mut EvmTestHarness<reth::revm::database_interface::EmptyDB, EthEvmFactory>,
+    harness: &mut EvmTestHarness<State<EmptyDB>, EthEvmFactory>,
 ) -> eyre::Result<()> {
     // Example: Test a custom transaction type
     let custom_tx = TxEnv {
         tx_type: 0x7E, // Example custom type
-        caller: Address::ZERO,
+        caller: dev_account(), // Use funded account
         gas_limit: 50_000,
         gas_price: 1_000_000_000u128,
         kind: TxKind::Call(Address::with_last_byte(1)),
         data: Bytes::from(vec![0x01, 0x02, 0x03]),
+        nonce: 2, // Account was used in fork transition tests
+        chain_id: Some(1),
         ..Default::default()
     };
 
@@ -109,15 +101,15 @@ fn test_with_fixtures() -> eyre::Result<()> {
     Ok(())
 }
 
-fn create_test_tx() -> TxEnv {
+fn create_test_tx_with_nonce(nonce: u64) -> TxEnv {
     TxEnv {
-        caller: Address::ZERO,
+        caller: dev_account(), // Use funded account
         gas_limit: 100_000,
         gas_price: 1_000_000_000u128,
         kind: TxKind::Create,
         value: U256::ZERO,
-        data: Bytes::from(vec![0x60, 0x80, 0x60, 0x40]), // Simple contract code
-        nonce: 0,
+        data: Bytes::from(vec![0x60, 0x80, 0x60, 0x40]), // dumb contract code (no logic)
+        nonce,
         chain_id: Some(1),
         access_list: Default::default(),
         gas_priority_fee: None,

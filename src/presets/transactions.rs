@@ -3,13 +3,14 @@
 use crate::{evm::EvmTestHarness, Error, Result};
 use reth::revm::{
     context::TxEnv,
+    database_interface::DatabaseCommit,
     primitives::{hardfork::SpecId, Address, Bytes, TxKind, U256},
 };
 use reth_evm::{Database, EvmFactory};
 
 /// Test EIP-1559 transaction execution
 pub fn test_eip1559_transaction<
-    DB: Database + Clone,
+    DB: Database + DatabaseCommit,
     Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>,
 >(
     harness: &mut EvmTestHarness<DB, Evm>,
@@ -43,7 +44,7 @@ pub fn test_eip1559_transaction<
 }
 
 /// Test that a transaction type is rejected
-pub fn test_tx_rejection<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>>(
+pub fn test_tx_rejection<DB: Database + DatabaseCommit, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>>(
     harness: &mut EvmTestHarness<DB, Evm>,
     tx: TxEnv,
 ) -> Result<()> {
@@ -59,7 +60,7 @@ pub fn test_tx_rejection<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx
 }
 
 /// Test basic value transfer
-pub fn test_value_transfer<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>>(
+pub fn test_value_transfer<DB: Database + DatabaseCommit, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>>(
     harness: &mut EvmTestHarness<DB, Evm>,
     from: Address,
     to: Address,
@@ -95,7 +96,7 @@ pub fn test_value_transfer<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, 
 
 /// Test contract deployment
 pub fn test_contract_deployment<
-    DB: Database + Clone,
+    DB: Database + DatabaseCommit,
     Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>,
 >(
     harness: &mut EvmTestHarness<DB, Evm>,
@@ -133,7 +134,7 @@ pub fn test_contract_deployment<
 }
 
 /// Test gas limit enforcement
-pub fn test_gas_limit<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>>(
+pub fn test_gas_limit<DB: Database + DatabaseCommit, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>>(
     harness: &mut EvmTestHarness<DB, Evm>,
     gas_limit: u64,
 ) -> Result<()> {

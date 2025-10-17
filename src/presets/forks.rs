@@ -1,11 +1,11 @@
 //! Fork transition test scenarios
 
 use crate::{evm::EvmTestHarness, Result};
-use reth::revm::{context::TxEnv, primitives::hardfork::SpecId};
+use reth::revm::{context::TxEnv, database_interface::DatabaseCommit, primitives::hardfork::SpecId};
 use reth_evm::{Database, EvmFactory};
 
 /// Test fork transition by executing transactions before and after
-pub fn test_fork_transition<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>>(
+pub fn test_fork_transition<DB: Database + DatabaseCommit, Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>>(
     harness: &mut EvmTestHarness<DB, Evm>,
     fork_block: u64,
     _pre_fork_spec: SpecId,
@@ -27,7 +27,7 @@ pub fn test_fork_transition<DB: Database + Clone, Evm: EvmFactory<Spec = SpecId,
 
 /// Test that features are disabled before fork
 pub fn test_feature_disabled_pre_fork<
-    DB: Database + Clone,
+    DB: Database + DatabaseCommit,
     Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>,
 >(
     harness: &mut EvmTestHarness<DB, Evm>,
@@ -42,7 +42,7 @@ pub fn test_feature_disabled_pre_fork<
 
 /// Test that features are enabled after fork
 pub fn test_feature_enabled_post_fork<
-    DB: Database + Clone,
+    DB: Database + DatabaseCommit,
     Evm: EvmFactory<Spec = SpecId, Tx = TxEnv>,
 >(
     harness: &mut EvmTestHarness<DB, Evm>,
