@@ -19,6 +19,9 @@ reth-payload-primitives = { git = "https://github.com/paradigmxyz/reth", rev = "
 # Alloy
 alloy-evm = { version = "0.21.0", default-features = false }
 
+# NOTE: This forces us to use the same reth version gnosis uses
+# reth_gnosis = { git = "https://github.com/gnosischain/reth_gnosis", rev = "b16a95f8bb4be0e7c6e5c5799b2034a9e30fdfbd" }
+
 # Utilities
 eyre = "0.6"
 parking_lot = "0.12"

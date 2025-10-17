@@ -40,8 +40,8 @@ let mut harness = EvmTestHarness::builder()
 See the [`examples/`](examples/) directory:
 
 ```bash
-cargo run --example basic_usage
-cargo run --example advanced_usage --features fixtures
+cargo run --example eth_engine
+cargo run --example gnosis_engine
 ```
 
 ## Contributing
